@@ -347,6 +347,10 @@
 
         // Parse result for movement commands
         function parseMovementCommand(text) {
+            if (!text) {
+                return null;
+            }
+
             const lowerText = text.toLowerCase();
             
             if (lowerText.includes('forward')) {
