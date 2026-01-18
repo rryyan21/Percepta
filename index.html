@@ -276,7 +276,7 @@
 
             <div class="results-section">
                 <h2>📊 Navigation Status</h2>
-                
+
                 <!-- State Information Display -->
                 <div class="state-info" id="stateInfo">
                     <h3 id="stateTitle">⚪ Waiting to Start</h3>
@@ -308,7 +308,7 @@
         // ==========================================
         // IMPORTS AND GLOBAL VARIABLES
         // ==========================================
-        
+
         // Import Overshoot SDK from local node_modules
         import { RealtimeVision } from '@overshoot/sdk';
 
@@ -316,20 +316,20 @@
         let vision = null;
         let arduinoWs = null;
         let arduinoConnected = false;
-        
+
         // State machine variables
         let currentState = 0; // 0 = idle, 1-4 = active states
         let currentPhase = 'idle'; // 'rotating' or 'moving_forward'
         let lastSensorDistance = 999; // Store latest ultrasonic sensor reading
         let resultCount = 0;
-        
+
         // Distance threshold for stopping forward movement (in cm)
         const DISTANCE_THRESHOLD = 15;
-        
+
         // ==========================================
         // STATE DEFINITIONS
         // ==========================================
-        
+
         // Define the 4 states with their target objects
         const STATES = {
             1: {
@@ -361,7 +361,7 @@
         // ==========================================
         // DOM ELEMENT REFERENCES
         // ==========================================
-        
+
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
         const statusDiv = document.getElementById('statusDiv');
@@ -370,7 +370,7 @@
         const resultCountDiv = document.getElementById('resultCount');
         const apiKeyInput = document.getElementById('apiKey');
         const sensorDataDiv = document.getElementById('sensorData');
-        
+
         // State info display elements
         const stateTitle = document.getElementById('stateTitle');
         const stateTarget = document.getElementById('stateTarget');
@@ -381,7 +381,7 @@
         // ==========================================
         // ARDUINO WEBSOCKET CONNECTION
         // ==========================================
-        
+
         // Connect to Arduino WebSocket server for motor control and sensor data
         function connectArduino() {
             try {
@@ -394,24 +394,24 @@
 
                 arduinoWs.onmessage = (event) => {
                     const data = JSON.parse(event.data);
-                    
+
                     if (data.type === 'connected') {
                         console.log('Arduino server:', data.message);
                         arduinoConnected = data.arduinoConnected;
-                    } 
+                    }
                     else if (data.type === 'commandResult') {
                         console.log(`Command ${data.command} sent:`, data.success);
-                    } 
+                    }
                     else if (data.type === 'status') {
                         console.log('Arduino status:', data.message);
-                    } 
+                    }
                     else if (data.type === 'sensorData') {
                         // Update sensor data display and store the value
                         const distance = parseFloat(data.data);
                         if (!isNaN(distance)) {
                             lastSensorDistance = distance;
                             sensorDataDiv.textContent = distance.toFixed(1);
-                            
+
                             // Check if we need to transition from moving forward to next state
                             checkDistanceThreshold();
                         }
@@ -438,7 +438,7 @@
         // ==========================================
         // ARDUINO COMMAND FUNCTIONS
         // ==========================================
-        
+
         // Send command to Arduino via WebSocket
         function sendArduinoCommand(command) {
             if (arduinoWs && arduinoWs.readyState === WebSocket.OPEN) {
@@ -453,7 +453,7 @@
         // ==========================================
         // STATE MACHINE FUNCTIONS
         // ==========================================
-        
+
         // Update the UI to show current state information
         function updateStateDisplay() {
             if (currentState === 0) {
@@ -468,7 +468,7 @@
                 const state = STATES[currentState];
                 stateTitle.textContent = `${state.emoji} ${state.name}`;
                 stateTarget.textContent = `Target: ${state.target}`;
-                
+
                 if (currentPhase === 'rotating') {
                     stateAction.textContent = '🔄 Action: Rotating to center target';
                     statePhase.textContent = 'Phase: ROTATION';
@@ -476,7 +476,7 @@
                     stateAction.textContent = '⬆️ Action: Moving forward to target';
                     statePhase.textContent = 'Phase: APPROACH';
                 }
-                
+
                 currentStateNum.textContent = currentState;
             } else if (currentState === 5) {
                 // Completed all states
@@ -487,15 +487,15 @@
                 currentStateNum.textContent = '✓';
             }
         }
-        
+
         // Transition to the next state
         function transitionToNextState() {
             // Stop any current movement
             sendArduinoCommand('X');
-            
+
             // Move to next state
             currentState++;
-            
+
             if (currentState > 4) {
                 // All states completed
                 console.log('🎉 All states completed! Mission accomplished.');
@@ -504,19 +504,19 @@
                 stopStream();
                 return;
             }
-            
+
             // Start new state in rotating phase
             currentPhase = 'rotating';
             console.log(`\n🔄 Transitioning to State ${currentState}: ${STATES[currentState].name}`);
             addLogMessage(`🔄 Transitioning to ${STATES[currentState].name}`);
-            
+
             // Update UI
             updateStateDisplay();
-            
+
             // Restart vision with new prompt
             restartVisionWithNewPrompt();
         }
-        
+
         // Check if distance threshold is reached (for moving forward phase)
         function checkDistanceThreshold() {
             // Only check if we're in moving_forward phase
@@ -524,27 +524,27 @@
                 if (lastSensorDistance < DISTANCE_THRESHOLD) {
                     console.log(`✅ Reached target! Distance: ${lastSensorDistance}cm < ${DISTANCE_THRESHOLD}cm threshold`);
                     addLogMessage(`✅ Target reached at ${lastSensorDistance.toFixed(1)}cm`);
-                    
+
                     // Transition to next state
                     transitionToNextState();
                 }
             }
         }
-        
+
         // Restart vision stream with updated prompt for current state
         async function restartVisionWithNewPrompt() {
             if (!vision) return;
-            
+
             try {
                 // Get current state prompt
                 const prompt = STATES[currentState].prompt;
-                
+
                 // Update the prompt without stopping/restarting the vision stream
                 console.log(`🔄 Updating prompt for ${STATES[currentState].name}`);
                 await vision.updatePrompt(prompt);
-                
+
                 console.log(`✅ Prompt updated successfully for ${STATES[currentState].name}`);
-                
+
             } catch (error) {
                 console.error('Failed to update prompt:', error);
             }
@@ -553,19 +553,19 @@
         // ==========================================
         // VISION RESULT PROCESSING
         // ==========================================
-        
+
         // Handle results from Overshoot Vision API
         function handleVisionResult(result) {
             resultCount++;
             resultCountDiv.textContent = resultCount;
-            
+
             // Parse the command from the result
             const command = parseMovementCommand(result.result);
-            
+
             // Log the result
             const resultDiv = document.createElement('div');
             resultDiv.className = 'result-item';
-            
+
             let commandIndicator = '';
             if (command) {
                 const directions = {
@@ -574,14 +574,14 @@
                     'D': '▶️ RIGHT',
                     'X': '⏹️ STOP'
                 };
-                
+
                 // Send command to Arduino
                 if (sendArduinoCommand(command)) {
                     commandIndicator = `<div style="margin-top: 8px; padding: 8px; background: #d1fae5; border-radius: 4px; color: #065f46; font-weight: 600;">
                         🤖 Command: ${directions[command]}
                     </div>`;
                     console.log(`🤖 Sent: ${command} (${directions[command]})`);
-                    
+
                     // Check if we should transition from rotating to moving forward
                     if (command === 'W' && currentPhase === 'rotating') {
                         console.log('✅ Target centered! Switching to forward movement.');
@@ -591,7 +591,7 @@
                     }
                 }
             }
-            
+
             resultDiv.innerHTML = `
                 <div class="result-number">[${resultCount}] State ${currentState} - ${currentPhase.toUpperCase()}</div>
                 <div class="result-text">${result.result}</div>
@@ -600,13 +600,13 @@
             `;
             results.insertBefore(resultDiv, results.firstChild);
         }
-        
+
         // Parse movement command from vision API response
         function parseMovementCommand(text) {
             if (!text) return null;
 
             const upperText = text.toUpperCase();
-            
+
             // Check for exact command matches first
             if (upperText.includes('W') || upperText.includes('FORWARD')) {
                 return 'W';
@@ -620,7 +620,7 @@
 
             return null;
         }
-        
+
         // Add a log message to the results display
         function addLogMessage(message) {
             const logDiv = document.createElement('div');
@@ -635,7 +635,7 @@
         // ==========================================
         // UI UPDATE FUNCTIONS
         // ==========================================
-        
+
         // Update status bar
         function updateStatus(text, state) {
             statusDiv.textContent = text;
@@ -645,7 +645,7 @@
         // ==========================================
         // MAIN CONTROL FUNCTIONS
         // ==========================================
-        
+
         // Start the autonomous navigation sequence
         async function startStream() {
             const apiKey = apiKeyInput.value.trim();
@@ -654,7 +654,7 @@
                 alert('Please enter your Overshoot API key');
                 return;
             }
-            
+
             if (!arduinoConnected) {
                 alert('Arduino not connected! Please start the arduino-server first.');
                 return;
@@ -701,13 +701,13 @@
                 currentState = 1;
                 currentPhase = 'rotating';
                 lastSensorDistance = 999;
-                
+
                 console.log('🚀 Starting autonomous navigation sequence');
                 addLogMessage('🚀 Starting autonomous navigation - 4 State Mission');
-                
+
                 // Update UI
                 updateStateDisplay();
-                
+
                 // Get prompt for first state
                 const prompt = STATES[1].prompt;
                 console.log('State 1 Prompt:', prompt);
@@ -717,7 +717,8 @@
                     apiUrl: 'https://cluster1.overshoot.ai/api/v0.2',
                     apiKey: apiKey,
                     prompt: prompt,
-                    source: { type: 'camera', cameraFacing: 'user'},
+                    source: { type: 'camera', cameraFacing: 'user' },
+                    iceServers: [{ urls: "turn:34.63.114.235:3478", username: "1769538895:c66a907c-61f4-4ec2-93a6-9d6b932776bb", credential: "Fu9L4CwyYZvsOLc+23psVAo3i/Y=", }],
                     onResult: (result) => {
                         handleVisionResult(result);
                     },
@@ -752,7 +753,7 @@
         // Stop the navigation sequence
         async function stopStream() {
             console.log('🛑 Stopping navigation...');
-            
+
             // Stop Arduino motors
             sendArduinoCommand('X');
 
@@ -777,7 +778,7 @@
             currentState = 0;
             currentPhase = 'idle';
             updateStateDisplay();
-            
+
             startBtn.disabled = false;
             stopBtn.disabled = true;
         }
@@ -785,7 +786,7 @@
         // ==========================================
         // EVENT LISTENERS
         // ==========================================
-        
+
         startBtn.addEventListener('click', startStream);
         stopBtn.addEventListener('click', stopStream);
 
@@ -803,10 +804,10 @@
         // ==========================================
         // INITIALIZATION
         // ==========================================
-        
+
         // Connect to Arduino server on page load
         connectArduino();
-        
+
         // Initialize display
         updateStateDisplay();
     </script>
