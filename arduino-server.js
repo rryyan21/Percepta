@@ -96,7 +96,7 @@ function sendCommand(command) {
             if (err) {
                 console.error('❌ Error sending command:', err.message);
             } else {
-                console.log(`📤 Sent to Arduino: ${command}`);
+                console.debug(`📤 Sent to Arduino: ${command}`);
             }
         });
         return true;
