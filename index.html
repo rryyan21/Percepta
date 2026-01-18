@@ -482,8 +482,18 @@
                     outputSchema: {
                         "type": "object",
                         "properties": {
-                            "event": {
-                                "data": "string"
+                            "person_found": {
+                                "type": "bool",
+                                "description": "If any distinguishing feature(s) of a person (ex: shoes, feet, legs) is found within the frame of the video."
+                            },
+                            "obstruction_found": {
+                                "type": "bool",
+                                "description": "If an object, that cannot be traversed by going through it, was spotted within the frame of the video and the ultrasonic sensor says object is too close."
+                            },
+                            "direction": {
+                                "type": "string",
+                                "enum": ["forward", "left", "right"],
+                                "description": "What direction the robot should move based on current view and ultrasonic sensor distance information. If the ultrasonic sensor is saying too closed, provide a turn."
                             }
                         }
                     },
