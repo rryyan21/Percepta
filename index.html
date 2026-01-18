@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -229,11 +230,12 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
             <h1>🚀 Overshoot Vision Stream</h1>
-            
+
             <div class="config-section">
                 <label for="apiKey">API Key:</label>
                 <input type="text" id="apiKey" placeholder="Enter your Overshoot API key">
@@ -241,7 +243,8 @@
 
             <div class="config-section">
                 <label for="prompt">Prompt (What should the AI look for?):</label>
-                <textarea id="prompt" placeholder="e.g., Describe what you see in one sentence">Which direction should I move? Only respond in "FORWARD", "BACKWARD", "LEFT", or "RIGHT".</textarea>
+                <textarea id="prompt"
+                    placeholder="e.g., Describe what you see in one sentence">Which direction should I move? Only respond in "FORWARD", "BACKWARD", "LEFT", or "RIGHT".</textarea>
             </div>
 
             <div class="button-group">
@@ -270,6 +273,10 @@
                         <div class="stat-label">Results</div>
                         <div class="stat-value" id="resultCount">0</div>
                     </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Distance (cm)</div>
+                        <div class="stat-value" id="sensorData">-</div>
+                    </div>
                 </div>
                 <div id="results" class="results"></div>
             </div>
@@ -279,7 +286,7 @@
     <script type="module">
         // Import Overshoot SDK from local node_modules
         import { RealtimeVision } from '@overshoot/sdk';
-        
+
         let vision = null;
         let resultCount = 0;
         let stopTimeout = null;
@@ -300,12 +307,12 @@
         function connectArduino() {
             try {
                 arduinoWs = new WebSocket('ws://localhost:8080');
-                
+
                 arduinoWs.onopen = () => {
                     console.log('✅ Connected to Arduino server');
                     arduinoConnected = true;
                 };
-                
+
                 arduinoWs.onmessage = (event) => {
                     const data = JSON.parse(event.data);
                     if (data.type === 'connected') {
@@ -315,14 +322,21 @@
                         console.log(`Command ${data.command} sent:`, data.success);
                     } else if (data.type === 'status') {
                         console.log('Arduino status:', data.message);
+                    } else if (data.type === 'sensorData') {
+                        // Update sensor data display
+                        const sensorDataDiv = document.getElementById('sensorData');
+                        if (sensorDataDiv) {
+                            sensorDataDiv.textContent = data.data;
+                        }
+                        console.log('📏 Sensor:', data.data);
                     }
                 };
-                
+
                 arduinoWs.onerror = (error) => {
                     console.error('Arduino WebSocket error:', error);
                     arduinoConnected = false;
                 };
-                
+
                 arduinoWs.onclose = () => {
                     console.log('⚠️ Disconnected from Arduino server');
                     arduinoConnected = false;
@@ -352,7 +366,7 @@
             }
 
             const lowerText = text.toLowerCase();
-            
+
             if (lowerText.includes('forward')) {
                 return 'W';
             } else if (lowerText.includes('backward') || lowerText.includes('back')) {
@@ -364,7 +378,7 @@
             } else if (lowerText.includes('stop')) {
                 return 'X';
             }
-            
+
             return null;
         }
 
@@ -380,7 +394,7 @@
             // Check if result contains movement command
             const command = parseMovementCommand(result.result);
             let commandIndicator = '';
-            
+
             if (command) {
                 const directions = {
                     'W': '🔼 FORWARD',
@@ -389,7 +403,7 @@
                     'D': '▶️ RIGHT',
                     'X': '⏹️ STOP'
                 };
-                
+
                 if (sendArduinoCommand(command)) {
                     commandIndicator = `<div style="margin-top: 8px; padding: 8px; background: #d1fae5; border-radius: 4px; color: #065f46; font-weight: 600;">
                         🤖 Arduino Command: ${directions[command]}
@@ -434,19 +448,19 @@
                 // First, test camera access with native getUserMedia
                 let testStream;
                 try {
-                    testStream = await navigator.mediaDevices.getUserMedia({ 
+                    testStream = await navigator.mediaDevices.getUserMedia({
                         video: true,
-                        audio: false 
+                        audio: false
                     });
-                    
+
                     // Show test stream in video preview
                     videoPreview.srcObject = testStream;
                     updateStatus('✅ Camera permissions granted - Starting vision stream...', 'starting');
-                    
+
                     // Stop test stream before starting Overshoot
                     testStream.getTracks().forEach(track => track.stop());
                     videoPreview.srcObject = null;
-                    
+
                 } catch (permError) {
                     console.error('Camera permission error:', permError);
                     let errorMsg = 'Camera access denied';
@@ -465,6 +479,14 @@
                     apiUrl: 'https://cluster1.overshoot.ai/api/v0.2',
                     apiKey: apiKey,
                     prompt: prompt,
+                    outputSchema: {
+                        "type": "object",
+                        "properties": {
+                            "event": {
+                                "data": "string"
+                            }
+                        }
+                    },
                     source: { type: 'camera', cameraFacing: 'environment' },
                     onResult: (result) => {
                         addResult(result, resultCount + 1);
@@ -480,7 +502,7 @@
 
                 const streamId = vision.getStreamId();
                 streamIdDiv.textContent = streamId ? streamId.substring(0, 8) + '...' : '-';
-                
+
                 // Attach video preview from Overshoot stream
                 const stream = vision.getMediaStream();
                 if (stream) {
@@ -544,4 +566,5 @@
         connectArduino();
     </script>
 </body>
+
 </html>

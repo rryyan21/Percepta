@@ -5,6 +5,7 @@
  */
 
 import { SerialPort } from 'serialport';
+import { ReadlineParser } from '@serialport/parser-readline';
 import { WebSocketServer } from 'ws';
 
 const WS_PORT = 8080;
@@ -53,6 +54,28 @@ async function connectArduino() {
     return new Promise((resolve, reject) => {
         port.on('open', () => {
             console.log('✅ Connected to Arduino!\n');
+            
+            // Set up parser to read line-by-line from Arduino
+            const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
+            
+            // Listen for data from Arduino (ultrasonic sensor readings)
+            parser.on('data', (data) => {
+                const message = data.trim();
+                if (message) {
+                    console.log(`📡 Arduino: ${message}`);
+                    
+                    // Broadcast sensor data to all connected clients
+                    connectedClients.forEach(ws => {
+                        if (ws.readyState === 1) { // WebSocket.OPEN
+                            ws.send(JSON.stringify({ 
+                                type: 'sensorData', 
+                                data: message 
+                            }));
+                        }
+                    });
+                }
+            });
+            
             resolve(port);
         });
 
