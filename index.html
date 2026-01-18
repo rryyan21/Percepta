@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Overshoot Vision Stream</title>
+    <title>Testing - Two-State Robot Control</title>
     <style>
         * {
             margin: 0;
@@ -49,7 +48,6 @@
         }
 
         input[type="text"],
-        input[type="number"],
         textarea {
             width: 100%;
             padding: 12px;
@@ -63,12 +61,6 @@
         textarea:focus {
             outline: none;
             border-color: #667eea;
-        }
-
-        textarea {
-            min-height: 80px;
-            resize: vertical;
-            font-family: inherit;
         }
 
         .button-group {
@@ -122,7 +114,7 @@
 
         .video-section,
         .results-section,
-        .nav-section {
+        .state-section {
             background: white;
             padding: 20px;
             border-radius: 12px;
@@ -168,36 +160,43 @@
             color: #991b1b;
         }
 
-        .results {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .result-item {
-            padding: 12px;
-            margin-bottom: 12px;
+        .state-display {
+            padding: 20px;
             background: #f9fafb;
-            border-left: 4px solid #667eea;
-            border-radius: 4px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            text-align: center;
         }
 
-        .result-number {
-            font-weight: 700;
-            color: #667eea;
-            margin-bottom: 4px;
-        }
-
-        .result-text {
-            color: #333;
-            line-height: 1.6;
-            font-size: 13px;
-            word-break: break-word;
-        }
-
-        .result-latency {
+        .state-label {
             font-size: 12px;
             color: #666;
-            margin-top: 4px;
+            margin-bottom: 8px;
+        }
+
+        .state-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .state-phase {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .state-phase.find-person {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .state-phase.exit-path {
+            background: #d1fae5;
+            color: #065f46;
         }
 
         .stats {
@@ -228,43 +227,35 @@
             color: #667eea;
         }
 
-        /* Navigation Panel Styles */
-        .nav-state {
-            padding: 10px;
-            background: #eef2ff;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            text-align: center;
+        .results {
+            max-height: 400px;
+            overflow-y: auto;
         }
 
-        .nav-state-label {
+        .result-item {
+            padding: 12px;
+            margin-bottom: 12px;
+            background: #f9fafb;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+        }
+
+        .result-number {
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 4px;
+        }
+
+        .result-text {
+            color: #333;
+            font-size: 13px;
+            word-break: break-word;
+        }
+
+        .result-latency {
             font-size: 12px;
             color: #666;
-        }
-
-        .nav-state-value {
-            font-size: 16px;
-            font-weight: 700;
-            color: #4f46e5;
-        }
-
-        .nav-phase {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 12px;
-        }
-
-        .nav-phase.search {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .nav-phase.exit {
-            background: #d1fae5;
-            color: #065f46;
+            margin-top: 4px;
         }
 
         .map-container {
@@ -306,14 +297,13 @@
 
         .map-cell.goal {
             background: #f6e05e;
-            color: #744210;
         }
 
         .map-cell.path {
             background: #4299e1;
         }
 
-        .nav-log {
+        .log {
             max-height: 200px;
             overflow-y: auto;
             font-size: 11px;
@@ -322,36 +312,20 @@
             color: #a0aec0;
             padding: 10px;
             border-radius: 8px;
+            margin-top: 12px;
         }
 
-        .nav-log-entry {
+        .log-entry {
             margin-bottom: 4px;
             padding: 2px 0;
             border-bottom: 1px solid #2d3748;
-        }
-
-        .confirmation-display {
-            display: flex;
-            gap: 4px;
-            margin: 8px 0;
-        }
-
-        .confirm-dot {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #e2e8f0;
-        }
-
-        .confirm-dot.filled {
-            background: #48bb78;
         }
 
         @media (max-width: 1200px) {
             .content {
                 grid-template-columns: 1fr 1fr;
             }
-            .nav-section {
+            .state-section {
                 grid-column: span 2;
             }
         }
@@ -360,27 +334,20 @@
             .content {
                 grid-template-columns: 1fr;
             }
-            .nav-section {
+            .state-section {
                 grid-column: span 1;
             }
         }
     </style>
 </head>
-
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚀 Overshoot Vision Stream</h1>
-
+            <h1>🤖 Testing - Two-State Robot Control</h1>
+            
             <div class="config-section">
                 <label for="apiKey">API Key:</label>
                 <input type="text" id="apiKey" placeholder="Enter your Overshoot API key">
-            </div>
-
-            <div class="config-section">
-                <label for="prompt">Prompt (What should the AI look for?):</label>
-                <textarea id="prompt"
-                    placeholder="e.g., Describe what you see in one sentence">You are a robot's vision system navigating a room. Analyze the camera frame. Look for: people (shoes, feet, legs), walls, and obstacles. Respond with JSON matching the schema. Be accurate about what you see - if you see shoes/feet very close to the camera, shoes_very_close must be true.</textarea>
             </div>
 
             <div class="button-group">
@@ -399,12 +366,8 @@
             </div>
 
             <div class="results-section">
-                <h2>📊 Results</h2>
+                <h2>📊 VLM Results</h2>
                 <div class="stats">
-                    <div class="stat-item">
-                        <div class="stat-label">Stream ID</div>
-                        <div class="stat-value" id="streamId">-</div>
-                    </div>
                     <div class="stat-item">
                         <div class="stat-label">Results</div>
                         <div class="stat-value" id="resultCount">0</div>
@@ -413,99 +376,71 @@
                         <div class="stat-label">Distance</div>
                         <div class="stat-value" id="sensorData">-</div>
                     </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Rotation</div>
+                        <div class="stat-value" id="rotationDegrees">0°</div>
+                    </div>
                 </div>
                 <div id="results" class="results"></div>
             </div>
 
-            <div class="nav-section">
-                <h2>🤖 Navigation</h2>
-                <span class="nav-phase search" id="navPhase">SEARCH</span>
-                <div class="nav-state">
-                    <div class="nav-state-label">Current State</div>
-                    <div class="nav-state-value" id="navState">IDLE</div>
+            <div class="state-section">
+                <h2>🎯 State Machine</h2>
+                <div class="state-display">
+                    <div class="state-label">Current State</div>
+                    <div class="state-value" id="currentState">IDLE</div>
+                    <div class="state-phase find-person" id="statePhase">FIND_PERSON</div>
                 </div>
-                <div class="stats">
-                    <div class="stat-item">
-                        <div class="stat-label">Rotation°</div>
-                        <div class="stat-value" id="navRotation">0</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Facing</div>
-                        <div class="stat-value" id="navFacing">UP</div>
-                    </div>
-                </div>
-                <div>
-                    <div class="stat-label">Confirmations (3 needed)</div>
-                    <div class="confirmation-display" id="confirmationDisplay">
-                        <div class="confirm-dot"></div>
-                        <div class="confirm-dot"></div>
-                        <div class="confirm-dot"></div>
-                    </div>
-                </div>
+                
                 <div class="map-container">
                     <div class="map-grid" id="mapGrid"></div>
                 </div>
-                <h3 style="font-size: 14px; margin: 12px 0 8px;">Navigation Log</h3>
-                <div class="nav-log" id="navLog"></div>
+
+                <div class="log" id="stateLog"></div>
             </div>
         </div>
     </div>
 
     <script type="module">
-        // Import Overshoot SDK from local node_modules
+        // Import Overshoot SDK
         import { RealtimeVision } from '@overshoot/sdk';
 
-        let vision = null;
-        let resultCount = 0;
-        let stopTimeout = null;
-        let arduinoWs = null;
-        let arduinoConnected = false;
-
-        const startBtn = document.getElementById('startBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const statusDiv = document.getElementById('statusDiv');
-        const videoPreview = document.getElementById('videoPreview');
-        const results = document.getElementById('results');
-        const streamIdDiv = document.getElementById('streamId');
-        const resultCountDiv = document.getElementById('resultCount');
-        const apiKeyInput = document.getElementById('apiKey');
-        const promptInput = document.getElementById('prompt');
-
-        // ==================== NAVIGATION STATE MACHINE ====================
-
+        // ==================== STATE DEFINITIONS ====================
         const STATE = {
+            FIND_PERSON: 'FIND_PERSON',
+            APPROACHING: 'APPROACHING',
+            EXIT_PATH: 'EXIT_PATH',
             IDLE: 'IDLE',
-            SCANNING: 'SCANNING',
-            APPROACHING_PERSON: 'APPROACHING',
-            TURNING_FROM_PERSON: 'TURNING_AWAY',
-            RETURNING: 'RETURNING',
-            EXITING: 'EXITING',
             STOPPED: 'STOPPED'
         };
 
-        const navState = {
-            currentState: STATE.IDLE,
-            phase: 'search', // 'search' or 'exit'
+        // ==================== GLOBAL STATE ====================
+        let vision = null;
+        let resultCount = 0;
+        let arduinoWs = null;
+        let arduinoConnected = false;
+        let turnInterval = null;
+        let moveInterval = null;
 
-            // Position tracking (grid-based)
+        const robotState = {
+            currentState: STATE.IDLE,
+            
+            // Position tracking
             position: { row: 5, col: 1 },
             facing: 'UP', // UP, DOWN, LEFT, RIGHT
-
-            // Rotation tracking for scanning
+            
+            // Rotation tracking for 360° turn
             rotationDegrees: 0,
-
-            // Movement tracking for return to origin
-            moveHistory: [],
-            approachMoves: 0,
-
-            // Confirmation system (3 similar results to confirm)
+            isTurning: false,
+            
+            // Confirmation buffer (3 readings to confirm)
             confirmationBuffer: [],
-            lastConfirmedPerson: false,
-
-            // Sensor data
+            
+            // Ultrasonic sensor
             lastUltrasonicDistance: 999,
             ultrasonicReadings: [],
-
+            CLOSE_DISTANCE: 20,
+            
             // Map (0 = empty, 1 = wall)
             map: [
                 [1, 1, 1, 0, 1, 1, 1],
@@ -516,61 +451,102 @@
                 [1, 0, 0, 0, 0, 0, 1],
                 [1, 1, 1, 1, 1, 1, 1],
             ],
-
-            // Exit path planning
+            
+            // Exit path
             exitPath: [],
             exitPathIndex: 0,
-
-            // Flags
-            firstApiResponseReceived: false,
-            isTurning: false,
-            turnStartTime: 0,
-
-            // Constants
-            CLOSE_DISTANCE: 20,
             GOAL: { row: 0, col: 3 },
-            TURN_DURATION_MS: 500, // Estimated time for a 90° turn
-            MOVE_DURATION_MS: 600, // Estimated time to move one cell
+            
+            // Monster Energy can tracking
+            expectedCanColor: 'pink', // pink -> white -> black
+            canColorSequence: ['pink', 'white', 'black'],
+            canSequenceIndex: 0
         };
 
-        // ==================== UI UPDATE FUNCTIONS ====================
+        // ==================== DOM ELEMENTS ====================
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusDiv = document.getElementById('statusDiv');
+        const videoPreview = document.getElementById('videoPreview');
+        const results = document.getElementById('results');
+        const resultCountDiv = document.getElementById('resultCount');
+        const sensorDataDiv = document.getElementById('sensorData');
+        const rotationDegreesDiv = document.getElementById('rotationDegrees');
+        const currentStateDiv = document.getElementById('currentState');
+        const statePhaseDiv = document.getElementById('statePhase');
+        const stateLog = document.getElementById('stateLog');
+        const mapGrid = document.getElementById('mapGrid');
+        const apiKeyInput = document.getElementById('apiKey');
 
-        function updateNavUI() {
-            document.getElementById('navState').textContent = navState.currentState;
-            document.getElementById('navPhase').textContent = navState.phase.toUpperCase();
-            document.getElementById('navPhase').className = `nav-phase ${navState.phase}`;
-            document.getElementById('navRotation').textContent = navState.rotationDegrees;
-            document.getElementById('navFacing').textContent = navState.facing;
-            renderMap();
-            updateConfirmationDisplay();
+        // ==================== CONSOLE LOGGING ====================
+        function logState(message, data = {}) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            stateLog.insertBefore(logEntry, stateLog.firstChild);
+            
+            // Keep only last 50 entries
+            while (stateLog.children.length > 50) {
+                stateLog.removeChild(stateLog.lastChild);
+            }
+            
+            console.log(`🧭 [${timestamp}] ${message}`, data);
         }
 
-        function updateConfirmationDisplay() {
-            const dots = document.querySelectorAll('#confirmationDisplay .confirm-dot');
-            const count = navState.confirmationBuffer.length;
-            dots.forEach((dot, i) => {
-                dot.className = i < count ? 'confirm-dot filled' : 'confirm-dot';
-            });
+        function logStateTransition(from, to, reason = '') {
+            const message = `🔄 STATE: ${from} → ${to}${reason ? ` | Reason: ${reason}` : ''}`;
+            logState(message);
+            console.log(`🔄 STATE TRANSITION: ${from} → ${to}${reason ? ` | Reason: ${reason}` : ''}`);
+        }
+
+        function logCurrentState() {
+            const state = robotState.currentState;
+            const rotation = robotState.rotationDegrees;
+            const distance = robotState.lastUltrasonicDistance;
+            const pos = robotState.position;
+            console.log(`📊 Current State: ${state} | Rotation: ${rotation}° | Distance: ${distance}cm | Position: (${pos.row}, ${pos.col}) | Facing: ${robotState.facing}`);
+        }
+
+        // ==================== UI UPDATES ====================
+        function updateStatus(text, state) {
+            statusDiv.textContent = text;
+            statusDiv.className = `status ${state}`;
+        }
+
+        function updateStateDisplay() {
+            currentStateDiv.textContent = robotState.currentState;
+            rotationDegreesDiv.textContent = `${robotState.rotationDegrees}°`;
+            
+            if (robotState.currentState === STATE.FIND_PERSON || robotState.currentState === STATE.APPROACHING) {
+                statePhaseDiv.textContent = 'FIND_PERSON';
+                statePhaseDiv.className = 'state-phase find-person';
+            } else if (robotState.currentState === STATE.EXIT_PATH) {
+                statePhaseDiv.textContent = 'EXIT_PATH';
+                statePhaseDiv.className = 'state-phase exit-path';
+            } else {
+                statePhaseDiv.textContent = robotState.currentState;
+                statePhaseDiv.className = 'state-phase find-person';
+            }
         }
 
         function renderMap() {
-            const grid = document.getElementById('mapGrid');
-            grid.innerHTML = '';
-
-            for (let r = 0; r < navState.map.length; r++) {
-                for (let c = 0; c < navState.map[0].length; c++) {
+            mapGrid.innerHTML = '';
+            
+            for (let r = 0; r < robotState.map.length; r++) {
+                for (let c = 0; c < robotState.map[0].length; c++) {
                     const cell = document.createElement('div');
                     cell.className = 'map-cell';
-
-                    const isRobot = navState.position.row === r && navState.position.col === c;
-                    const isGoal = navState.GOAL.row === r && navState.GOAL.col === c;
-                    const isPath = navState.exitPath.some(p => p.row === r && p.col === c);
-                    const isWall = navState.map[r][c] === 1;
-
+                    
+                    const isRobot = robotState.position.row === r && robotState.position.col === c;
+                    const isGoal = robotState.GOAL.row === r && robotState.GOAL.col === c;
+                    const isPath = robotState.exitPath.some(p => p.row === r && p.col === c);
+                    const isWall = robotState.map[r][c] === 1;
+                    
                     if (isRobot) {
                         cell.classList.add('robot');
                         const arrows = { 'UP': '↑', 'DOWN': '↓', 'LEFT': '←', 'RIGHT': '→' };
-                        cell.textContent = arrows[navState.facing];
+                        cell.textContent = arrows[robotState.facing];
                     } else if (isGoal) {
                         cell.classList.add('goal');
                         cell.textContent = '★';
@@ -581,573 +557,24 @@
                     } else {
                         cell.classList.add('empty');
                     }
-
-                    grid.appendChild(cell);
+                    
+                    mapGrid.appendChild(cell);
                 }
             }
-        }
-
-        function navLog(message) {
-            const log = document.getElementById('navLog');
-            const entry = document.createElement('div');
-            entry.className = 'nav-log-entry';
-            const time = new Date().toLocaleTimeString();
-            entry.textContent = `[${time}] ${message}`;
-            log.insertBefore(entry, log.firstChild);
-
-            // Keep only last 50 entries
-            while (log.children.length > 50) {
-                log.removeChild(log.lastChild);
-            }
-
-            console.log(`🧭 NAV: ${message}`);
-        }
-
-        // ==================== CONFIRMATION SYSTEM ====================
-
-        function addToConfirmationBuffer(apiResult) {
-            navState.confirmationBuffer.push(apiResult);
-            if (navState.confirmationBuffer.length > 3) {
-                navState.confirmationBuffer.shift();
-            }
-        }
-
-        function isPersonConfirmed() {
-            if (navState.confirmationBuffer.length < 3) return false;
-            const personValues = navState.confirmationBuffer.map(r => r.person_found);
-            return personValues.every(v => v === true);
-        }
-
-        function isObstructionConfirmed() {
-            if (navState.confirmationBuffer.length < 3) return false;
-            const obstructionValues = navState.confirmationBuffer.map(r => r.obstruction_found);
-            return obstructionValues.every(v => v === true);
-        }
-
-        function getConfirmedDirection() {
-            if (navState.confirmationBuffer.length < 3) return null;
-            const directions = navState.confirmationBuffer.map(r => r.direction);
-            if (directions.every(d => d === directions[0])) {
-                return directions[0];
-            }
-            return null;
-        }
-
-        function clearConfirmationBuffer() {
-            navState.confirmationBuffer = [];
-        }
-
-        // ==================== ULTRASONIC HANDLING ====================
-
-        function updateUltrasonicDistance(distanceStr) {
-            const dist = parseInt(distanceStr, 10);
-            if (isNaN(dist) || dist < 0) return;
-
-            navState.ultrasonicReadings.push(dist);
-            if (navState.ultrasonicReadings.length > 3) {
-                navState.ultrasonicReadings.shift();
-            }
-            navState.lastUltrasonicDistance = dist;
-        }
-
-        function isUltrasonicClose() {
-            // If turning, don't worry about sensor distance
-            if (navState.isTurning) return false;
-
-            // Require 2+ readings showing close to avoid spurious readings
-            if (navState.ultrasonicReadings.length < 2) {
-                return navState.lastUltrasonicDistance <= navState.CLOSE_DISTANCE;
-            }
-            const closeCount = navState.ultrasonicReadings.filter(d => d <= navState.CLOSE_DISTANCE).length;
-            return closeCount >= 2;
-        }
-
-        function isDistanceNormal() {
-            return navState.lastUltrasonicDistance > navState.CLOSE_DISTANCE;
-        }
-
-        // ==================== PATH PLANNING (BFS) ====================
-
-        function findShortestPath(start, goal, map) {
-            const rows = map.length;
-            const cols = map[0].length;
-            const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]]; // UP, DOWN, LEFT, RIGHT
-            const dirNames = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
-
-            const queue = [[start.row, start.col, []]];
-            const visited = new Set();
-            visited.add(`${start.row},${start.col}`);
-
-            while (queue.length > 0) {
-                const [r, c, path] = queue.shift();
-
-                if (r === goal.row && c === goal.col) {
-                    return path;
-                }
-
-                for (let i = 0; i < 4; i++) {
-                    const nr = r + directions[i][0];
-                    const nc = c + directions[i][1];
-                    const key = `${nr},${nc}`;
-
-                    if (nr >= 0 && nr < rows && nc >= 0 && nc < cols &&
-                        map[nr][nc] === 0 && !visited.has(key)) {
-                        visited.add(key);
-                        queue.push([nr, nc, [...path, { dir: dirNames[i], row: nr, col: nc }]]);
-                    }
-                }
-            }
-
-            return null; // No path found
-        }
-
-        function updateMapObstruction(row, col) {
-            if (row >= 0 && row < navState.map.length &&
-                col >= 0 && col < navState.map[0].length) {
-                navState.map[row][col] = 1;
-                navLog(`Map updated: [${row}][${col}] = obstruction`);
-            }
-        }
-
-        function getNextCellInDirection(pos, facing) {
-            const moves = {
-                'UP': { dr: -1, dc: 0 },
-                'DOWN': { dr: 1, dc: 0 },
-                'LEFT': { dr: 0, dc: -1 },
-                'RIGHT': { dr: 0, dc: 1 }
-            };
-            const move = moves[facing];
-            return {
-                row: pos.row + move.dr,
-                col: pos.col + move.dc
-            };
-        }
-
-        // ==================== MOVEMENT COMMANDS ====================
-
-        function turnLeft() {
-            navState.isTurning = true;
-            navState.turnStartTime = Date.now();
-            sendArduinoCommand('A');
-
-            // Update facing direction (counterclockwise)
-            const facingOrder = ['UP', 'LEFT', 'DOWN', 'RIGHT'];
-            const idx = facingOrder.indexOf(navState.facing);
-            navState.facing = facingOrder[(idx + 1) % 4];
-            navState.rotationDegrees += 90;
-
-            navLog(`Turn LEFT → now facing ${navState.facing}`);
-
-            // Clear turning flag after estimated turn time
-            setTimeout(() => {
-                navState.isTurning = false;
-            }, navState.TURN_DURATION_MS);
-        }
-
-        function turnRight() {
-            navState.isTurning = true;
-            navState.turnStartTime = Date.now();
-            sendArduinoCommand('D');
-
-            // Update facing direction (clockwise)
-            const facingOrder = ['UP', 'RIGHT', 'DOWN', 'LEFT'];
-            const idx = facingOrder.indexOf(navState.facing);
-            navState.facing = facingOrder[(idx + 1) % 4];
-            navState.rotationDegrees += 90;
-
-            navLog(`Turn RIGHT → now facing ${navState.facing}`);
-
-            setTimeout(() => {
-                navState.isTurning = false;
-            }, navState.TURN_DURATION_MS);
-        }
-
-        function moveForward() {
-            navState.isTurning = false;
-            sendArduinoCommand('W');
-
-            // Update position based on facing
-            const moves = {
-                'UP': { dr: -1, dc: 0 },
-                'DOWN': { dr: 1, dc: 0 },
-                'LEFT': { dr: 0, dc: -1 },
-                'RIGHT': { dr: 0, dc: 1 }
-            };
-            const move = moves[navState.facing];
-            navState.position.row += move.dr;
-            navState.position.col += move.dc;
-
-            // Track for return
-            navState.moveHistory.push({ facing: navState.facing });
-
-            navLog(`Move FORWARD → pos [${navState.position.row}][${navState.position.col}]`);
-        }
-
-        function stopMotors() {
-            sendArduinoCommand('X');
-            navLog('Motors STOPPED');
-        }
-
-        function getTurnDirection(current, target) {
-            const order = ['UP', 'RIGHT', 'DOWN', 'LEFT'];
-            const ci = order.indexOf(current);
-            const ti = order.indexOf(target);
-            const diff = (ti - ci + 4) % 4;
-            // If diff is 1 or 2, turn right. If diff is 3, turn left.
-            return diff === 3 ? 'LEFT' : 'RIGHT';
-        }
-
-        function getOppositeDirection(dir) {
-            const opposites = { 'UP': 'DOWN', 'DOWN': 'UP', 'LEFT': 'RIGHT', 'RIGHT': 'LEFT' };
-            return opposites[dir];
-        }
-
-        // ==================== MAIN NAVIGATION LOGIC ====================
-
-        function processNavigation(apiResult) {
-            // Add to confirmation buffer
-            addToConfirmationBuffer(apiResult);
-
-            const state = navState.currentState;
-            const ultrasonicClose = isUltrasonicClose();
-
-            // Parse API result
-            const personFound = apiResult.person_found;
-            const shoesVeryClose = apiResult.shoes_very_close;
-            const obstructionFound = apiResult.obstruction_found;
-            const clearPathAhead = apiResult.clear_path_ahead;
-            const suggestedDir = apiResult.direction;
-
-            navLog(`API: person=${personFound}, shoes_close=${shoesVeryClose}, obstruction=${obstructionFound}, dir=${suggestedDir}`);
-
-            // Update UI
-            updateNavUI();
-
-            // ===== SAFETY OVERRIDES (always check first) =====
-
-            // If shoes are visually very close, TURN AWAY immediately regardless of ultrasonic
-            if (shoesVeryClose && !navState.isTurning) {
-                navLog('⚠️ SHOES VERY CLOSE - Emergency turn!');
-                navState.currentState = STATE.TURNING_FROM_PERSON;
-                navState.phase = 'search'; // Stay in search mode when encountering person
-                turnLeft();
-                updateNavUI();
-                return;
-            }
-
-            // If ultrasonic says close AND not currently turning, need to react
-            if (ultrasonicClose && !navState.isTurning && state !== STATE.TURNING_FROM_PERSON) {
-                navLog(`⚠️ Ultrasonic close (${navState.lastUltrasonicDistance}cm)`);
-
-                // If we see a person, it's a person obstruction
-                if (personFound) {
-                    navState.currentState = STATE.TURNING_FROM_PERSON;
-                    turnLeft();
-                    updateNavUI();
-                    return;
-                }
-
-                // Otherwise it's a wall/obstruction - turn based on suggestion
-                if (suggestedDir === 'left') {
-                    turnLeft();
-                } else {
-                    turnRight();
-                }
-                updateNavUI();
-                return;
-            }
-
-            // ===== STATE-SPECIFIC LOGIC =====
-
-            switch (state) {
-                case STATE.IDLE:
-                    // Waiting for first API response to start
-                    navLog('Starting SCAN phase...');
-                    navState.currentState = STATE.SCANNING;
-                    navState.rotationDegrees = 0;
-                    navState.phase = 'search';
-                    clearConfirmationBuffer();
-                    turnRight(); // Start rotating to scan
-                    break;
-
-                case STATE.SCANNING:
-                    // Check if we've done a full rotation without finding anyone
-                    if (navState.rotationDegrees >= 360) {
-                        navLog('🔄 Full 360° scan complete, no person. Switching to EXIT.');
-                        navState.phase = 'exit';
-                        navState.currentState = STATE.EXITING;
-                        navState.exitPath = findShortestPath(navState.position, navState.GOAL, navState.map);
-                        navState.exitPathIndex = 0;
-                        clearConfirmationBuffer();
-
-                        if (!navState.exitPath) {
-                            navLog('❌ No exit path found!');
-                            navState.currentState = STATE.STOPPED;
-                            stopMotors();
-                        } else {
-                            navLog(`Exit path found: ${navState.exitPath.length} steps`);
-                        }
-                        updateNavUI();
-                        return;
-                    }
-
-                    // Check if person confirmed (3 consistent readings)
-                    if (isPersonConfirmed()) {
-                        navLog('👤 Person CONFIRMED! Approaching...');
-                        navState.currentState = STATE.APPROACHING_PERSON;
-                        navState.approachMoves = 0;
-                        navState.lastConfirmedPerson = true;
-                        clearConfirmationBuffer();
-                        stopMotors();
-                        updateNavUI();
-                        return;
-                    }
-
-                    // Keep rotating (but not if already turning)
-                    if (!navState.isTurning) {
-                        turnRight();
-                    }
-                    break;
-
-                case STATE.APPROACHING_PERSON:
-                    // Move toward person until ultrasonic says close OR shoes_very_close
-                    if (ultrasonicClose || shoesVeryClose) {
-                        navLog('📏 Close to person! Turning away...');
-                        navState.currentState = STATE.TURNING_FROM_PERSON;
-                        clearConfirmationBuffer();
-                        stopMotors();
-                        updateNavUI();
-                        return;
-                    }
-
-                    // If path ahead is clear, move forward
-                    if (clearPathAhead !== false && !navState.isTurning) {
-                        moveForward();
-                        navState.approachMoves++;
-                    } else if (!navState.isTurning) {
-                        // Path blocked? Turn toward person based on API suggestion
-                        if (suggestedDir === 'left') {
-                            turnLeft();
-                        } else if (suggestedDir === 'right') {
-                            turnRight();
-                        }
-                    }
-                    break;
-
-                case STATE.TURNING_FROM_PERSON:
-                    // Keep turning until distance is normal AND we don't see shoes close
-                    if (isDistanceNormal() && !shoesVeryClose && !personFound) {
-                        navLog('✅ Clear after turning from person');
-                        stopMotors();
-                        navState.isTurning = false;
-
-                        // Now return to scanning position and continue
-                        navState.currentState = STATE.RETURNING;
-                        clearConfirmationBuffer();
-                        updateNavUI();
-                        return;
-                    }
-
-                    // Keep turning (left to turn away from person)
-                    if (!navState.isTurning) {
-                        turnLeft();
-                    }
-                    break;
-
-                case STATE.RETURNING:
-                    // Simplified: just resume scanning from current position
-                    // (A more complex implementation would retrace steps)
-                    navLog('↩️ Resuming scan from current position...');
-                    navState.currentState = STATE.SCANNING;
-                    navState.rotationDegrees = 0; // Reset rotation counter for new scan
-                    clearConfirmationBuffer();
-                    updateNavUI();
-                    break;
-
-                case STATE.EXITING:
-                    // Handle person appearing during exit
-                    if (personFound && isPersonConfirmed()) {
-                        navLog('👤 Person during EXIT - turning away');
-                        navState.currentState = STATE.TURNING_FROM_PERSON;
-                        clearConfirmationBuffer();
-                        turnLeft();
-                        updateNavUI();
-                        return;
-                    }
-
-                    if (!navState.exitPath || navState.exitPathIndex >= navState.exitPath.length) {
-                        navLog('🏁 EXIT COMPLETE!');
-                        navState.currentState = STATE.STOPPED;
-                        stopMotors();
-                        updateNavUI();
-                        return;
-                    }
-
-                    const nextStep = navState.exitPath[navState.exitPathIndex];
-
-                    // Check if there's an obstruction confirmed in the way
-                    if (obstructionFound && isObstructionConfirmed()) {
-                        navLog('🚧 Obstruction during exit! Recalculating...');
-                        updateMapObstruction(nextStep.row, nextStep.col);
-                        clearConfirmationBuffer();
-
-                        // Recalculate path
-                        navState.exitPath = findShortestPath(navState.position, navState.GOAL, navState.map);
-                        navState.exitPathIndex = 0;
-
-                        if (!navState.exitPath) {
-                            navLog('❌ No alternative exit path!');
-                            navState.currentState = STATE.STOPPED;
-                            stopMotors();
-                        }
-                        updateNavUI();
-                        return;
-                    }
-
-                    // Need to turn to face the right direction?
-                    if (navState.facing !== nextStep.dir) {
-                        if (!navState.isTurning) {
-                            const turnDir = getTurnDirection(navState.facing, nextStep.dir);
-                            navLog(`Need to face ${nextStep.dir}, turning ${turnDir}`);
-                            if (turnDir === 'LEFT') {
-                                turnLeft();
-                            } else {
-                                turnRight();
-                            }
-                        }
-                    } else if (!ultrasonicClose && !navState.isTurning) {
-                        // Facing correct direction and path clear - move forward
-                        moveForward();
-                        navState.exitPathIndex++;
-                        navLog(`Exit progress: ${navState.exitPathIndex}/${navState.exitPath.length}`);
-                    }
-                    break;
-
-                case STATE.STOPPED:
-                    stopMotors();
-                    break;
-            }
-
-            updateNavUI();
-        }
-
-        // ==================== OVERSHOOT INTEGRATION ====================
-
-        function handleOvershootResult(result) {
-            if (!navState.firstApiResponseReceived) {
-                navState.firstApiResponseReceived = true;
-                navState.currentState = STATE.IDLE; // Will transition to SCANNING
-                navLog('🚀 First API response - Starting navigation!');
-            }
-
-            try {
-                // Parse the JSON result from Overshoot
-                let parsed;
-                if (typeof result.result === 'string') {
-                    parsed = JSON.parse(result.result);
-                } else {
-                    parsed = result.result;
-                }
-
-                // Provide defaults for optional fields
-                const apiData = {
-                    person_found: parsed.person_found ?? false,
-                    obstruction_found: parsed.obstruction_found ?? false,
-                    direction: parsed.direction ?? 'forward',
-                    shoes_very_close: parsed.shoes_very_close ?? false,
-                    clear_path_ahead: parsed.clear_path_ahead ?? true
-                };
-
-                processNavigation(apiData);
-            } catch (e) {
-                console.error('Failed to parse API result:', e, result);
-                navLog(`Parse error: ${e.message}`);
-            }
-        }
-
-        // ==================== ARDUINO CONNECTION ====================
-
-        function connectArduino() {
-            try {
-                arduinoWs = new WebSocket('ws://localhost:8080');
-
-                arduinoWs.onopen = () => {
-                    console.log('✅ Connected to Arduino server');
-                    arduinoConnected = true;
-                    navLog('Arduino connected');
-                };
-
-                arduinoWs.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    if (data.type === 'connected') {
-                        console.log('Arduino server:', data.message);
-                        arduinoConnected = data.arduinoConnected;
-                    } else if (data.type === 'commandResult') {
-                        console.log(`Command ${data.command} sent:`, data.success);
-                    } else if (data.type === 'status') {
-                        console.log('Arduino status:', data.message);
-                    } else if (data.type === 'sensorData') {
-                        // Update sensor data display
-                        const sensorDataDiv = document.getElementById('sensorData');
-                        if (sensorDataDiv) {
-                            sensorDataDiv.textContent = data.data;
-                        }
-                        console.log('📏 Sensor:', data.data);
-
-                        // Update navigation ultrasonic data
-                        updateUltrasonicDistance(data.data);
-                    }
-                };
-
-                arduinoWs.onerror = (error) => {
-                    console.error('Arduino WebSocket error:', error);
-                    arduinoConnected = false;
-                    navLog('Arduino connection error');
-                };
-
-                arduinoWs.onclose = () => {
-                    console.log('⚠️ Disconnected from Arduino server');
-                    arduinoConnected = false;
-                    navLog('Arduino disconnected - reconnecting...');
-                    // Try to reconnect after 3 seconds
-                    setTimeout(connectArduino, 3000);
-                };
-            } catch (error) {
-                console.error('Failed to connect to Arduino server:', error);
-            }
-        }
-
-        // Send command to Arduino
-        function sendArduinoCommand(command) {
-            if (arduinoWs && arduinoWs.readyState === WebSocket.OPEN) {
-                arduinoWs.send(JSON.stringify({ type: 'command', command }));
-                return true;
-            } else {
-                console.warn('Arduino not connected');
-                return false;
-            }
-        }
-
-        // Make sendArduinoCommand available globally for nav functions
-        window.sendArduinoCommand = sendArduinoCommand;
-
-        function updateStatus(text, state) {
-            statusDiv.textContent = text;
-            statusDiv.className = `status ${state}`;
         }
 
         function addResult(result, index) {
             resultCount++;
             resultCountDiv.textContent = resultCount;
-
+            
             const resultDiv = document.createElement('div');
             resultDiv.className = 'result-item';
-
+            
             let resultText = result.result;
             if (typeof resultText === 'object') {
                 resultText = JSON.stringify(resultText, null, 2);
             }
-
+            
             resultDiv.innerHTML = `
                 <div class="result-number">[${index}]</div>
                 <div class="result-text">${resultText}</div>
@@ -1156,210 +583,481 @@
             results.insertBefore(resultDiv, results.firstChild);
         }
 
+        // ==================== ARDUINO CONNECTION ====================
+        function connectArduino() {
+            try {
+                arduinoWs = new WebSocket('ws://localhost:8080');
+                
+                arduinoWs.onopen = () => {
+                    console.log('✅ Connected to Arduino server');
+                    logState('✅ Arduino connected');
+                    arduinoConnected = true;
+                };
+                
+                arduinoWs.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'connected') {
+                        console.log('📡 Arduino server:', data.message);
+                        arduinoConnected = data.arduinoConnected;
+                    } else if (data.type === 'commandResult') {
+                        console.log(`📤 Command ${data.command} sent:`, data.success);
+                    } else if (data.type === 'sensorData') {
+                        sensorDataDiv.textContent = data.data;
+                        updateUltrasonicDistance(data.data);
+                        console.log(`📡 Ultrasonic: ${data.data}cm | Close: ${isUltrasonicClose()}`);
+                    }
+                };
+                
+                arduinoWs.onerror = (error) => {
+                    console.error('❌ Arduino WebSocket error:', error);
+                    arduinoConnected = false;
+                    logState('❌ Arduino connection error');
+                };
+                
+                arduinoWs.onclose = () => {
+                    console.log('⚠️ Disconnected from Arduino server');
+                    arduinoConnected = false;
+                    logState('⚠️ Arduino disconnected - reconnecting...');
+                    setTimeout(connectArduino, 3000);
+                };
+            } catch (error) {
+                console.error('❌ Failed to connect to Arduino server:', error);
+                logState(`❌ Failed to connect: ${error.message}`);
+            }
+        }
+
+        function sendArduinoCommand(command) {
+            if (arduinoWs && arduinoWs.readyState === WebSocket.OPEN) {
+                arduinoWs.send(JSON.stringify({ type: 'command', command }));
+                console.log(`📤 Arduino Command: ${command} | State: ${robotState.currentState}`);
+                return true;
+            } else {
+                console.warn('⚠️ Arduino not connected');
+                return false;
+            }
+        }
+
+        // ==================== ULTRASONIC SENSOR ====================
+        function updateUltrasonicDistance(distanceStr) {
+            const dist = parseInt(distanceStr, 10);
+            if (isNaN(dist) || dist < 0) return;
+            
+            robotState.ultrasonicReadings.push(dist);
+            if (robotState.ultrasonicReadings.length > 3) {
+                robotState.ultrasonicReadings.shift();
+            }
+            robotState.lastUltrasonicDistance = dist;
+        }
+
+        function isUltrasonicClose() {
+            if (robotState.ultrasonicReadings.length < 2) {
+                return robotState.lastUltrasonicDistance <= robotState.CLOSE_DISTANCE;
+            }
+            const closeCount = robotState.ultrasonicReadings.filter(d => d <= robotState.CLOSE_DISTANCE).length;
+            return closeCount >= 2;
+        }
+
+        // ==================== CONFIRMATION SYSTEM ====================
+        function addToConfirmationBuffer(result) {
+            robotState.confirmationBuffer.push(result);
+            if (robotState.confirmationBuffer.length > 3) {
+                robotState.confirmationBuffer.shift();
+            }
+        }
+
+        function isShoesConfirmed() {
+            if (robotState.confirmationBuffer.length < 3) return false;
+            const shoesValues = robotState.confirmationBuffer.map(r => r.shoes_detected === true);
+            return shoesValues.every(v => v === true);
+        }
+
+        function clearConfirmationBuffer() {
+            robotState.confirmationBuffer = [];
+        }
+
+        // ==================== MOVEMENT FUNCTIONS ====================
+        function stopAllMovement() {
+            if (turnInterval) {
+                clearInterval(turnInterval);
+                turnInterval = null;
+            }
+            if (moveInterval) {
+                clearInterval(moveInterval);
+                moveInterval = null;
+            }
+            sendArduinoCommand('X');
+            robotState.isTurning = false;
+            console.log('⏹️ All movement stopped');
+        }
+
+        function startContinuousTurn() {
+            if (turnInterval) return; // Already turning
+            
+            robotState.isTurning = true;
+            logState('🔄 Starting continuous 360° turn');
+            console.log('🔄 Starting continuous 360° turn');
+            
+            // Turn right continuously at slow intervals
+            turnInterval = setInterval(() => {
+                sendArduinoCommand('D');
+                robotState.rotationDegrees = (robotState.rotationDegrees + 5) % 360; // Approximate 5° per interval
+                updateStateDisplay();
+                
+                if (robotState.rotationDegrees >= 360) {
+                    console.log('✅ Full 360° rotation complete');
+                    logState('✅ Full 360° rotation complete - no shoes found, switching to EXIT_PATH');
+                    stopAllMovement();
+                    switchToExitPath();
+                }
+            }, 200); // Turn every 200ms for slow rotation
+        }
+
+        function startMovingForward() {
+            if (moveInterval) return; // Already moving
+            
+            logState('🔼 Starting forward movement');
+            console.log('🔼 Starting forward movement');
+            
+            moveInterval = setInterval(() => {
+                sendArduinoCommand('W');
+                
+                // Check if we're close enough
+                if (isUltrasonicClose()) {
+                    console.log(`✅ Ultrasonic close (${robotState.lastUltrasonicDistance}cm) - switching to EXIT_PATH`);
+                    logState(`✅ Ultrasonic close (${robotState.lastUltrasonicDistance}cm) - switching to EXIT_PATH`);
+                    stopAllMovement();
+                    switchToExitPath();
+                }
+            }, 300); // Move forward every 300ms
+        }
+
+        // ==================== PATHFINDING ====================
+        function findShortestPath(start, goal, map) {
+            const rows = map.length;
+            const cols = map[0].length;
+            const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]]; // UP, DOWN, LEFT, RIGHT
+            const dirNames = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
+            
+            const queue = [[start.row, start.col, []]];
+            const visited = new Set();
+            visited.add(`${start.row},${start.col}`);
+            
+            while (queue.length > 0) {
+                const [r, c, path] = queue.shift();
+                
+                if (r === goal.row && c === goal.col) {
+                    return path;
+                }
+                
+                for (let i = 0; i < 4; i++) {
+                    const nr = r + directions[i][0];
+                    const nc = c + directions[i][1];
+                    const key = `${nr},${nc}`;
+                    
+                    if (nr >= 0 && nr < rows && nc >= 0 && nc < cols &&
+                        map[nr][nc] === 0 && !visited.has(key)) {
+                        visited.add(key);
+                        queue.push([nr, nc, [...path, { dir: dirNames[i], row: nr, col: nc }]]);
+                    }
+                }
+            }
+            
+            return null;
+        }
+
+        function getDirectionToFace(currentFacing, targetDir) {
+            const directions = ['UP', 'RIGHT', 'DOWN', 'LEFT'];
+            const currentIdx = directions.indexOf(currentFacing);
+            const targetIdx = directions.indexOf(targetDir);
+            
+            if (currentIdx === targetIdx) return null; // Already facing correct direction
+            
+            const diff = (targetIdx - currentIdx + 4) % 4;
+            return diff === 1 || diff === 3 ? (diff === 1 ? 'RIGHT' : 'LEFT') : null;
+        }
+
+        // ==================== STATE TRANSITIONS ====================
+        function switchToApproaching() {
+            logStateTransition(robotState.currentState, STATE.APPROACHING, 'Shoes detected');
+            robotState.currentState = STATE.APPROACHING;
+            stopAllMovement();
+            clearConfirmationBuffer();
+            updateStateDisplay();
+            startMovingForward();
+        }
+
+        function switchToExitPath() {
+            logStateTransition(robotState.currentState, STATE.EXIT_PATH, 'Ultrasonic < 20cm or 360° complete');
+            robotState.currentState = STATE.EXIT_PATH;
+            stopAllMovement();
+            clearConfirmationBuffer();
+            
+            // Calculate exit path
+            robotState.exitPath = findShortestPath(robotState.position, robotState.GOAL, robotState.map);
+            robotState.exitPathIndex = 0;
+            robotState.canSequenceIndex = 0;
+            robotState.expectedCanColor = robotState.canColorSequence[0];
+            
+            if (!robotState.exitPath) {
+                console.error('❌ No exit path found!');
+                logState('❌ No exit path found!');
+                robotState.currentState = STATE.STOPPED;
+                updateStateDisplay();
+                return;
+            }
+            
+            console.log(`🗺️ Path calculated: ${robotState.exitPath.length} steps | Position: (${robotState.position.row}, ${robotState.position.col})`);
+            logState(`🗺️ Exit path found: ${robotState.exitPath.length} steps`);
+            renderMap();
+            updateStateDisplay();
+            
+            // Start following path
+            followExitPath();
+        }
+
+        function followExitPath() {
+            if (robotState.exitPathIndex >= robotState.exitPath.length) {
+                console.log('✅ Exit reached!');
+                logState('✅ Exit reached!');
+                robotState.currentState = STATE.STOPPED;
+                stopAllMovement();
+                updateStateDisplay();
+                return;
+            }
+            
+            const nextStep = robotState.exitPath[robotState.exitPathIndex];
+            const turnDir = getDirectionToFace(robotState.facing, nextStep.dir);
+            
+            if (turnDir) {
+                // Need to turn first
+                console.log(`🔄 Turning ${turnDir} to face ${nextStep.dir}`);
+                logState(`🔄 Turning ${turnDir} to face ${nextStep.dir}`);
+                sendArduinoCommand(turnDir === 'LEFT' ? 'A' : 'D');
+                
+                setTimeout(() => {
+                    robotState.facing = nextStep.dir;
+                    robotState.position = { row: nextStep.row, col: nextStep.col };
+                    robotState.exitPathIndex++;
+                    renderMap();
+                    updateStateDisplay();
+                    followExitPath();
+                }, 500); // Wait for turn to complete
+            } else {
+                // Already facing correct direction, move forward
+                console.log(`🔼 Moving forward to (${nextStep.row}, ${nextStep.col})`);
+                logState(`🔼 Moving forward to (${nextStep.row}, ${nextStep.col})`);
+                sendArduinoCommand('W');
+                
+                setTimeout(() => {
+                    robotState.position = { row: nextStep.row, col: nextStep.col };
+                    robotState.exitPathIndex++;
+                    renderMap();
+                    updateStateDisplay();
+                    followExitPath();
+                }, 600); // Wait for movement to complete
+            }
+        }
+
+        // ==================== VLM RESULT PROCESSING ====================
+        function processVLMResult(result) {
+            logCurrentState();
+            
+            // Parse result
+            let parsedResult;
+            try {
+                if (typeof result.result === 'string') {
+                    parsedResult = JSON.parse(result.result);
+                } else {
+                    parsedResult = result.result;
+                }
+            } catch (e) {
+                console.error('❌ Error parsing VLM result:', e);
+                return;
+            }
+            
+            console.log('👁️ VLM Result:', parsedResult);
+            logState(`👁️ VLM: shoes=${parsedResult.shoes_detected}, close=${parsedResult.shoes_very_close}, can=${parsedResult.can_color || 'none'}`);
+            
+            const state = robotState.currentState;
+            
+            if (state === STATE.FIND_PERSON) {
+                // Add to confirmation buffer
+                addToConfirmationBuffer(parsedResult);
+                
+                // Check if shoes are confirmed
+                if (isShoesConfirmed()) {
+                    console.log('✅ Decision: Shoes confirmed after 3 readings');
+                    logState('✅ Shoes confirmed - switching to APPROACHING');
+                    switchToApproaching();
+                }
+            } else if (state === STATE.APPROACHING) {
+                // Continue moving forward, check ultrasonic sensor
+                // State transition handled by startMovingForward() interval
+            } else if (state === STATE.EXIT_PATH) {
+                // Check for Monster Energy cans
+                if (parsedResult.can_detected && parsedResult.can_color) {
+                    console.log(`🥤 Monster Energy can detected: ${parsedResult.can_color} (expected: ${robotState.expectedCanColor})`);
+                    logState(`🥤 Can detected: ${parsedResult.can_color} (expected: ${robotState.expectedCanColor})`);
+                    
+                    if (parsedResult.can_color === robotState.expectedCanColor) {
+                        // Correct color, advance to next
+                        robotState.canSequenceIndex++;
+                        if (robotState.canSequenceIndex < robotState.canColorSequence.length) {
+                            robotState.expectedCanColor = robotState.canColorSequence[robotState.canSequenceIndex];
+                            console.log(`✅ Correct can color! Next expected: ${robotState.expectedCanColor}`);
+                            logState(`✅ Correct can! Next: ${robotState.expectedCanColor}`);
+                        } else {
+                            console.log('✅ All cans found!');
+                            logState('✅ All Monster Energy cans found!');
+                        }
+                    }
+                }
+            }
+        }
+
+        // ==================== STREAM CONTROL ====================
         async function startStream() {
             const apiKey = apiKeyInput.value.trim();
-            const prompt = promptInput.value.trim();
-
+            
             if (!apiKey) {
                 alert('Please enter your API key');
                 return;
             }
-
-            if (!prompt) {
-                alert('Please enter a prompt');
-                return;
-            }
-
+            
             try {
-                updateStatus('🔄 Checking camera permissions...', 'starting');
+                updateStatus('🔄 Starting camera...', 'starting');
                 startBtn.disabled = true;
                 stopBtn.disabled = false;
                 resultCount = 0;
                 resultCountDiv.textContent = '0';
                 results.innerHTML = '';
-
-                // Reset navigation state
-                navState.currentState = STATE.IDLE;
-                navState.phase = 'search';
-                navState.position = { row: 5, col: 1 };
-                navState.facing = 'UP';
-                navState.rotationDegrees = 0;
-                navState.moveHistory = [];
-                navState.confirmationBuffer = [];
-                navState.firstApiResponseReceived = false;
-                navState.isTurning = false;
-                navState.exitPath = [];
-                navState.exitPathIndex = 0;
-                // Reset map
-                navState.map = [
-                    [1, 1, 1, 0, 1, 1, 1],
-                    [1, 0, 1, 0, 0, 0, 1],
-                    [1, 0, 1, 0, 1, 0, 1],
-                    [1, 0, 1, 0, 1, 0, 1],
-                    [1, 0, 1, 0, 1, 0, 1],
-                    [1, 0, 0, 0, 0, 0, 1],
-                    [1, 1, 1, 1, 1, 1, 1],
-                ];
-                updateNavUI();
-                navLog('Navigation reset');
-
-                // First, test camera access with native getUserMedia
+                
+                // Reset state
+                robotState.currentState = STATE.FIND_PERSON;
+                robotState.rotationDegrees = 0;
+                robotState.position = { row: 5, col: 1 };
+                robotState.facing = 'UP';
+                robotState.confirmationBuffer = [];
+                robotState.ultrasonicReadings = [];
+                robotState.lastUltrasonicDistance = 999;
+                updateStateDisplay();
+                renderMap();
+                
+                logState('🚀 Starting stream - State: FIND_PERSON');
+                console.log('🚀 Starting stream - State: FIND_PERSON');
+                
+                // Get camera permission first
                 let testStream;
                 try {
                     testStream = await navigator.mediaDevices.getUserMedia({
                         video: true,
                         audio: false
                     });
-
-                    // Show test stream in video preview
-                    videoPreview.srcObject = testStream;
-                    updateStatus('✅ Camera permissions granted - Starting vision stream...', 'starting');
-
-                    // Stop test stream before starting Overshoot
                     testStream.getTracks().forEach(track => track.stop());
-                    videoPreview.srcObject = null;
-
                 } catch (permError) {
-                    console.error('Camera permission error:', permError);
-                    let errorMsg = 'Camera access denied';
-                    if (permError.name === 'NotAllowedError') {
-                        errorMsg = 'Camera permission denied. Please allow camera access and try again.';
-                    } else if (permError.name === 'NotFoundError') {
-                        errorMsg = 'No camera found. Please connect a camera and try again.';
-                    } else if (permError.name === 'NotReadableError') {
-                        errorMsg = 'Camera is already in use by another application.';
-                    }
-                    throw new Error(errorMsg);
+                    throw new Error('Camera permission denied');
                 }
-
-                // Now start the Overshoot vision stream with YOUR EXACT SCHEMA
+                
+                // Start Overshoot vision stream
+                const promptState1 = "Look for shoes or feet in the camera view. Respond with JSON: {shoes_detected: true/false, shoes_very_close: true/false}";
+                const promptState2 = "Look for Monster Energy cans. Identify colors: pink, white, black. Respond with JSON: {can_detected: true/false, can_color: 'pink'|'white'|'black'|null}";
+                
+                // Use dynamic prompt based on state
+                let currentPrompt = promptState1;
+                
                 vision = new RealtimeVision({
                     apiUrl: 'https://cluster1.overshoot.ai/api/v0.2',
                     apiKey: apiKey,
-                    prompt: prompt,
-                    outputSchema: {
-                        "type": "object",
-                        "properties": {
-                            "person_found": {
-                                "type": "boolean",
-                                "description": "If any distinguishing feature(s) of a person (ex: shoes, feet, legs) is found within the frame of the video."
-                            },
-                            "obstruction_found": {
-                                "type": "boolean",
-                                "description": "If an object that cannot be traversed was spotted. Only true when something blocks the path."
-                            },
-                            "direction": {
-                                "type": "string",
-                                "enum": ["forward", "left", "right"],
-                                "description": "Recommended movement direction. If path is blocked, suggest a turn direction."
-                            },
-                            "shoes_very_close": {
-                                "type": "boolean",
-                                "description": "True if shoes/feet appear dangerously close (within immediate collision range), regardless of ultrasonic reading."
-                            },
-                            "clear_path_ahead": {
-                                "type": "boolean",
-                                "description": "True if forward path appears traversable with no immediate obstacles."
-                            }
-                        },
-                        "required": ["person_found", "obstruction_found", "direction"]
-                    },
+                    prompt: currentPrompt,
                     source: { type: 'camera', cameraFacing: 'environment' },
-                    // ICE/TURN servers for WebRTC connection
-                    iceServers: [
-                    {
-      urls: "turn:34.63.114.235:3478",
-      username: "1769538895:c66a907c-61f4-4ec2-93a6-9d6b932776bb",
-      credential: "Fu9L4CwyYZvsOLc+23psVAo3i/Y=",
-    }
-                    ],
                     onResult: (result) => {
                         addResult(result, resultCount + 1);
-                        // Process navigation with the result
-                        handleOvershootResult(result);
+                        processVLMResult(result);
+                        
+                        // Update prompt based on state
+                        const newPrompt = robotState.currentState === STATE.EXIT_PATH ? promptState2 : promptState1;
+                        if (newPrompt !== currentPrompt && vision) {
+                            currentPrompt = newPrompt;
+                            // Note: SDK may not support dynamic prompt changes, but we'll try
+                            console.log('🔄 Prompt updated for state:', robotState.currentState);
+                        }
                     },
                     onError: (error) => {
-                        console.error('Error:', error);
+                        console.error('❌ Error:', error);
                         updateStatus(`❌ Error: ${error.message}`, 'error');
-                        navLog(`API Error: ${error.message}`);
+                        logState(`❌ API Error: ${error.message}`);
                     },
                     debug: false,
                 });
-
+                
                 await vision.start();
-
-                const streamId = vision.getStreamId();
-                streamIdDiv.textContent = streamId ? streamId.substring(0, 8) + '...' : '-';
-
-                // Attach video preview from Overshoot stream
+                
                 const stream = vision.getMediaStream();
                 if (stream) {
                     videoPreview.srcObject = stream;
                 }
-
-                updateStatus('✅ Stream active - Navigation started', 'active');
-                navLog('Stream started - waiting for first API response...');
-
+                
+                updateStatus('✅ Stream active - FIND_PERSON state', 'active');
+                logState('✅ Stream active');
+                
+                // Start 360° turn
+                startContinuousTurn();
+                
             } catch (error) {
-                console.error('Failed to start:', error);
+                console.error('❌ Failed to start:', error);
                 updateStatus(`❌ Failed: ${error.message}`, 'error');
+                logState(`❌ Failed to start: ${error.message}`);
                 startBtn.disabled = false;
                 stopBtn.disabled = true;
             }
         }
 
         async function stopStream() {
-            if (stopTimeout) {
-                clearTimeout(stopTimeout);
-                stopTimeout = null;
-            }
-
-            // Stop Arduino motors
-            sendArduinoCommand('X');
-            navState.currentState = STATE.STOPPED;
-            navLog('Stream stopped by user');
-
+            stopAllMovement();
+            robotState.currentState = STATE.STOPPED;
+            logState('🛑 Stream stopped by user');
+            console.log('🛑 Stream stopped');
+            
             if (vision) {
                 try {
                     await vision.stop();
                     updateStatus('🛑 Stream stopped', 'idle');
-                    streamIdDiv.textContent = '-';
                 } catch (error) {
-                    console.error('Stop error:', error);
+                    console.error('❌ Stop error:', error);
                 }
                 vision = null;
             }
-
+            
             if (videoPreview.srcObject) {
                 videoPreview.srcObject.getTracks().forEach(track => track.stop());
                 videoPreview.srcObject = null;
             }
-
+            
             startBtn.disabled = false;
             stopBtn.disabled = true;
-            updateNavUI();
+            updateStateDisplay();
         }
 
+        // ==================== INITIALIZATION ====================
         startBtn.addEventListener('click', startStream);
         stopBtn.addEventListener('click', stopStream);
-
-        // Load API key from localStorage if available
+        
+        // Load API key from localStorage
         const savedApiKey = localStorage.getItem('overshoot_api_key');
         if (savedApiKey) {
             apiKeyInput.value = savedApiKey;
         }
-
-        // Save API key to localStorage when changed
+        
         apiKeyInput.addEventListener('change', () => {
             localStorage.setItem('overshoot_api_key', apiKeyInput.value);
         });
-
-        // Connect to Arduino server on page load
+        
+        // Connect to Arduino on page load
         connectArduino();
-
+        
         // Initialize map display
         renderMap();
+        updateStateDisplay();
     </script>
 </body>
-
 </html>
