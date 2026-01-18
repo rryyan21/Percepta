@@ -800,6 +800,48 @@
             localStorage.setItem('overshoot_api_key', apiKeyInput.value);
         });
 
+        // Keyboard controls for manual Arduino commands
+        document.addEventListener('keydown', (event) => {
+            // Only process if Arduino is connected
+            if (!arduinoConnected) {
+                return;
+            }
+
+            const key = event.key.toUpperCase();
+            
+            // Check if the key is a valid command (W, A, D, or X)
+            if (['W', 'A', 'D', 'X'].includes(key)) {
+                // Prevent default browser behavior
+                event.preventDefault();
+                
+                // Send command to Arduino
+                const success = sendArduinoCommand(key);
+                
+                if (success) {
+                    const directions = {
+                        'W': '🔼 FORWARD',
+                        'A': '◀️ LEFT',
+                        'D': '▶️ RIGHT',
+                        'X': '⏹️ STOP'
+                    };
+                    
+                    console.log(`⌨️ Manual control: ${key} (${directions[key]})`);
+                    
+                    // Visual feedback - briefly highlight the status
+                    const originalStatus = statusDiv.textContent;
+                    const originalClass = statusDiv.className;
+                    statusDiv.textContent = `⌨️ Manual: ${directions[key]}`;
+                    statusDiv.className = 'status active';
+                    
+                    // Restore status after 500ms
+                    setTimeout(() => {
+                        statusDiv.textContent = originalStatus;
+                        statusDiv.className = originalClass;
+                    }, 500);
+                }
+            }
+        });
+
         // ==========================================
         // INITIALIZATION
         // ==========================================
