@@ -244,11 +244,6 @@
                 <textarea id="prompt" placeholder="e.g., Describe what you see in one sentence">Which direction should I move? Only respond in "FORWARD", "BACKWARD", "LEFT", or "RIGHT".</textarea>
             </div>
 
-            <div class="config-section">
-                <label for="duration">Duration (seconds):</label>
-                <input type="number" id="duration" value="30" min="5" max="300">
-            </div>
-
             <div class="button-group">
                 <button class="btn-start" id="startBtn">Start Stream</button>
                 <button class="btn-stop" id="stopBtn" disabled>Stop Stream</button>
@@ -300,7 +295,6 @@
         const resultCountDiv = document.getElementById('resultCount');
         const apiKeyInput = document.getElementById('apiKey');
         const promptInput = document.getElementById('prompt');
-        const durationInput = document.getElementById('duration');
 
         // Connect to Arduino WebSocket server
         function connectArduino() {
@@ -414,7 +408,6 @@
         async function startStream() {
             const apiKey = apiKeyInput.value.trim();
             const prompt = promptInput.value.trim();
-            const duration = parseInt(durationInput.value);
 
             if (!apiKey) {
                 alert('Please enter your API key');
@@ -460,12 +453,7 @@
                     videoPreview.srcObject = stream;
                 }
 
-                updateStatus('✅ Stream active - Waiting for results...', 'active');
-
-                // Auto-stop after duration
-                stopTimeout = setTimeout(() => {
-                    stopStream();
-                }, duration * 1000);
+                updateStatus('✅ Stream active - Runs until stopped manually', 'active');
 
             } catch (error) {
                 console.error('Failed to start:', error);
