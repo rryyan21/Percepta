@@ -79,6 +79,27 @@ The Overshoot JS SDK requires:
 - WebSocket support
 - Modern browser (Chrome, Firefox, Safari, Edge)
 
+## Credits & External Libraries
+
+This project uses the following external tools and libraries:
+
+### Core Dependencies
+
+- **[@overshoot/sdk](https://github.com/Overshoot-ai/overshoot-js-sdk)** - Overshoot Vision Language Model SDK for real-time video analysis
+- **[serialport](https://github.com/serialport/serialport)** - Node.js library for serial port communication with Arduino
+- **[@serialport/parser-readline](https://github.com/serialport/serialport)** - Readline parser for serial port data
+- **[ws](https://github.com/websockets/ws)** - WebSocket library for real-time communication between browser and Arduino server
+
+### Development Tools
+
+- **[Vite](https://vitejs.dev/)** - Next-generation frontend build tool and development server
+
+### Browser APIs
+
+- **WebRTC** - For real-time video streaming
+- **MediaDevices API** - For camera access
+- **WebSocket API** - For browser-to-server communication
+
 ## Resources
 
 - [JavaScript SDK GitHub](https://github.com/Overshoot-ai/overshoot-js-sdk)
