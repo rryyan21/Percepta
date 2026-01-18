@@ -61,9 +61,7 @@ async function connectArduino() {
             // Listen for data from Arduino (ultrasonic sensor readings)
             parser.on('data', (data) => {
                 const message = data.trim();
-                if (message) {
-                    console.log(`📡 Arduino: ${message}`);
-                    
+                if (message) {                    
                     // Broadcast sensor data to all connected clients
                     connectedClients.forEach(ws => {
                         if (ws.readyState === 1) { // WebSocket.OPEN

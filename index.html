@@ -324,7 +324,7 @@
         let resultCount = 0;
 
         // Distance threshold for stopping forward movement (in cm)
-        const DISTANCE_THRESHOLD = 15;
+        const DISTANCE_THRESHOLD = 30;
 
         // ==========================================
         // STATE DEFINITIONS
@@ -408,6 +408,7 @@
                     else if (data.type === 'sensorData') {
                         // Update sensor data display and store the value
                         const distance = parseFloat(data.data);
+                        console.log(distance);
                         if (!isNaN(distance)) {
                             lastSensorDistance = distance;
                             sensorDataDiv.textContent = distance.toFixed(1);
