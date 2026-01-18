@@ -408,7 +408,7 @@
                     else if (data.type === 'sensorData') {
                         // Update sensor data display and store the value
                         const distance = parseFloat(data.data);
-                        console.log(distance);
+                        // console.log(distance);
                         if (!isNaN(distance)) {
                             lastSensorDistance = distance;
                             sensorDataDiv.textContent = distance.toFixed(1);
@@ -416,7 +416,7 @@
                             // Check if we need to transition from moving forward to next state
                             checkDistanceThreshold();
                         }
-                        console.log('📏 Sensor:', data.data);
+                        // console.log('📏 Sensor:', data.data);
                     }
                 };
 

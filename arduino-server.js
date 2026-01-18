@@ -150,6 +150,7 @@ async function startServer() {
                 
                 if (message.type === 'command' && message.command) {
                     const command = message.command.toUpperCase();
+                    console.log("SENDING: " + command);
                     if (['W', 'A', 'S', 'D', 'X'].includes(command)) {
                         const success = sendCommand(command);
                         const directions = {
