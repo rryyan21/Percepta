@@ -241,7 +241,7 @@
 
             <div class="config-section">
                 <label for="prompt">Prompt (What should the AI look for?):</label>
-                <textarea id="prompt" placeholder="e.g., Describe what you see in one sentence">Which direction should I move? Only respond in "FORWARD", "BACKWARD", "LEFT", or "RIGHT".</textarea>
+                <textarea id="prompt" placeholder="e.g., Describe what you see in one sentence">Describe what you see in one sentence</textarea>
             </div>
 
             <div class="config-section">
@@ -288,8 +288,6 @@
         let vision = null;
         let resultCount = 0;
         let stopTimeout = null;
-        let arduinoWs = null;
-        let arduinoConnected = false;
 
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
@@ -302,74 +300,6 @@
         const promptInput = document.getElementById('prompt');
         const durationInput = document.getElementById('duration');
 
-        // Connect to Arduino WebSocket server
-        function connectArduino() {
-            try {
-                arduinoWs = new WebSocket('ws://localhost:8080');
-                
-                arduinoWs.onopen = () => {
-                    console.log('✅ Connected to Arduino server');
-                    arduinoConnected = true;
-                };
-                
-                arduinoWs.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    if (data.type === 'connected') {
-                        console.log('Arduino server:', data.message);
-                        arduinoConnected = data.arduinoConnected;
-                    } else if (data.type === 'commandResult') {
-                        console.log(`Command ${data.command} sent:`, data.success);
-                    } else if (data.type === 'status') {
-                        console.log('Arduino status:', data.message);
-                    }
-                };
-                
-                arduinoWs.onerror = (error) => {
-                    console.error('Arduino WebSocket error:', error);
-                    arduinoConnected = false;
-                };
-                
-                arduinoWs.onclose = () => {
-                    console.log('⚠️ Disconnected from Arduino server');
-                    arduinoConnected = false;
-                    // Try to reconnect after 3 seconds
-                    setTimeout(connectArduino, 3000);
-                };
-            } catch (error) {
-                console.error('Failed to connect to Arduino server:', error);
-            }
-        }
-
-        // Send command to Arduino
-        function sendArduinoCommand(command) {
-            if (arduinoWs && arduinoWs.readyState === WebSocket.OPEN) {
-                arduinoWs.send(JSON.stringify({ type: 'command', command }));
-                return true;
-            } else {
-                console.warn('Arduino not connected');
-                return false;
-            }
-        }
-
-        // Parse result for movement commands
-        function parseMovementCommand(text) {
-            const lowerText = text.toLowerCase();
-            
-            if (lowerText.includes('forward')) {
-                return 'W';
-            } else if (lowerText.includes('backward') || lowerText.includes('back')) {
-                return 'S';
-            } else if (lowerText.includes('left')) {
-                return 'A';
-            } else if (lowerText.includes('right')) {
-                return 'D';
-            } else if (lowerText.includes('stop')) {
-                return 'X';
-            }
-            
-            return null;
-        }
-
         function updateStatus(text, state) {
             statusDiv.textContent = text;
             statusDiv.className = `status ${state}`;
@@ -379,34 +309,12 @@
             resultCount++;
             resultCountDiv.textContent = resultCount;
 
-            // Check if result contains movement command
-            const command = parseMovementCommand(result.result);
-            let commandIndicator = '';
-            
-            if (command) {
-                const directions = {
-                    'W': '🔼 FORWARD',
-                    'S': '🔽 BACKWARD',
-                    'A': '◀️ LEFT',
-                    'D': '▶️ RIGHT',
-                    'X': '⏹️ STOP'
-                };
-                
-                if (sendArduinoCommand(command)) {
-                    commandIndicator = `<div style="margin-top: 8px; padding: 8px; background: #d1fae5; border-radius: 4px; color: #065f46; font-weight: 600;">
-                        🤖 Arduino Command: ${directions[command]}
-                    </div>`;
-                    console.log(`🤖 Sent Arduino command: ${command} (${directions[command]})`);
-                }
-            }
-
             const resultDiv = document.createElement('div');
             resultDiv.className = 'result-item';
             resultDiv.innerHTML = `
                 <div class="result-number">[${index}]</div>
                 <div class="result-text">${result.result}</div>
                 <div class="result-latency">Latency: ${result.total_latency_ms.toFixed(1)}ms</div>
-                ${commandIndicator}
             `;
             results.insertBefore(resultDiv, results.firstChild);
         }
@@ -481,9 +389,6 @@
                 stopTimeout = null;
             }
 
-            // Stop Arduino motors
-            sendArduinoCommand('X');
-
             if (vision) {
                 try {
                     await vision.stop();
@@ -517,9 +422,6 @@
         apiKeyInput.addEventListener('change', () => {
             localStorage.setItem('overshoot_api_key', apiKeyInput.value);
         });
-
-        // Connect to Arduino server on page load
-        connectArduino();
     </script>
 </body>
 </html>

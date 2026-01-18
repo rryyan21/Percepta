@@ -6,12 +6,23 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node simple-overshoot.js",
+    "start": "node simple-overshoot.js",
+    "browser": "node overshoot-script.js",
+    "arduino": "node arduino-led.js",
+    "motors": "node arduino-motors.js",
+    "arduino-server": "node arduino-server.js"
   },
   "devDependencies": {
     "vite": "^5.0.0"
   },
   "dependencies": {
-    "@overshoot/sdk": "^0.1.0-alpha.2"
+    "@overshoot/sdk": "^0.1.0-alpha.2",
+    "@serialport/parser-readline": "^12.0.0",
+    "dotenv": "^16.4.1",
+    "puppeteer": "^24.35.0",
+    "serialport": "^12.0.0",
+    "ws": "^8.19.0"
   }
 }
