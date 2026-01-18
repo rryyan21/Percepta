@@ -560,7 +560,7 @@
             resultCountDiv.textContent = resultCount;
             
             // Parse the command from the result
-            const command = parseMovementCommand(result.result);
+            const command = null; //parseMovementCommand(result.result);
             
             // Log the result
             const resultDiv = document.createElement('div');
@@ -809,8 +809,8 @@
 
             const key = event.key.toUpperCase();
             
-            // Check if the key is a valid command (W, A, D, or X)
-            if (['W', 'A', 'D', 'X'].includes(key)) {
+            // Check if the key is a valid command (W, A, S, D, or X)
+            if (['W', 'A', 'S', 'D', 'X'].includes(key)) {
                 // Prevent default browser behavior
                 event.preventDefault();
                 
@@ -821,6 +821,7 @@
                     const directions = {
                         'W': '🔼 FORWARD',
                         'A': '◀️ LEFT',
+                        'S': '🔽 BACKWARD',
                         'D': '▶️ RIGHT',
                         'X': '⏹️ STOP'
                     };
