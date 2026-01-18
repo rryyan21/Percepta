@@ -420,13 +420,43 @@
             }
 
             try {
-                updateStatus('🔄 Starting camera...', 'starting');
+                updateStatus('🔄 Checking camera permissions...', 'starting');
                 startBtn.disabled = true;
                 stopBtn.disabled = false;
                 resultCount = 0;
                 resultCountDiv.textContent = '0';
                 results.innerHTML = '';
 
+                // First, test camera access with native getUserMedia
+                let testStream;
+                try {
+                    testStream = await navigator.mediaDevices.getUserMedia({ 
+                        video: true,
+                        audio: false 
+                    });
+                    
+                    // Show test stream in video preview
+                    videoPreview.srcObject = testStream;
+                    updateStatus('✅ Camera permissions granted - Starting vision stream...', 'starting');
+                    
+                    // Stop test stream before starting Overshoot
+                    testStream.getTracks().forEach(track => track.stop());
+                    videoPreview.srcObject = null;
+                    
+                } catch (permError) {
+                    console.error('Camera permission error:', permError);
+                    let errorMsg = 'Camera access denied';
+                    if (permError.name === 'NotAllowedError') {
+                        errorMsg = 'Camera permission denied. Please allow camera access and try again.';
+                    } else if (permError.name === 'NotFoundError') {
+                        errorMsg = 'No camera found. Please connect a camera and try again.';
+                    } else if (permError.name === 'NotReadableError') {
+                        errorMsg = 'Camera is already in use by another application.';
+                    }
+                    throw new Error(errorMsg);
+                }
+
+                // Now start the Overshoot vision stream
                 vision = new RealtimeVision({
                     apiUrl: 'https://cluster1.overshoot.ai/api/v0.2',
                     apiKey: apiKey,
@@ -447,7 +477,7 @@
                 const streamId = vision.getStreamId();
                 streamIdDiv.textContent = streamId ? streamId.substring(0, 8) + '...' : '-';
                 
-                // Attach video preview
+                // Attach video preview from Overshoot stream
                 const stream = vision.getMediaStream();
                 if (stream) {
                     videoPreview.srcObject = stream;
