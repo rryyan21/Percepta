@@ -322,6 +322,10 @@
         let currentPhase = 'idle'; // 'rotating' or 'moving_forward'
         let lastSensorDistance = 999; // Store latest ultrasonic sensor reading
         let resultCount = 0;
+        
+        // Manual override variables
+        let manualOverride = false; // True when Shift + movement key is pressed
+        let shiftPressed = false; // Track Shift key state
 
         // Distance threshold for stopping forward movement (in cm)
         const DISTANCE_THRESHOLD = 30;
@@ -336,25 +340,25 @@
                 name: "State 1: Find Person",
                 target: "person's shoes",
                 emoji: "👟",
-                prompt: "If person's shoes or feet are not visible in the frame, return 'A'. If person's shoes are on the left side of the frame, return 'A'. If person's shoes are on the right side of the frame, return 'D'. If person's shoes are in the direct center of the frame, return 'W'."
+                prompt: "If person's shoes or feet are not visible in the frame, return 'A'. If person's shoes are in the frame, return 'W'."
             },
             2: {
                 name: "State 2: Find Black Can",
                 target: "black soda can",
                 emoji: "⚫",
-                prompt: "If a black soda can is not visible in the frame, return 'A'. If the black soda can is on the left side of the frame, return 'A'. If the black soda can is on the right side of the frame, return 'D'. If the black soda can is in the direct center of the frame, return 'W'."
+                prompt: "If a black rectangle or blob or shape are not visible in the frame, return 'A'. If black rectangle or blob or shape are in the frame, return 'W'."
             },
             3: {
-                name: "State 3: Find Purple Can",
-                target: "purple soda can",
-                emoji: "🟣",
-                prompt: "If a purple soda can is not visible in the frame, return 'A'. If the purple soda can is on the left side of the frame, return 'A'. If the purple soda can is on the right side of the frame, return 'D'. If the purple soda can is in the direct center of the frame, return 'W'."
+                name: "State 3: Find White Can",
+                target: "White soda can",
+                emoji: "⚪",
+                prompt: "If a white rectangle or blob or shape, return 'A'. If white rectangle or blob or shape is in the frame, return 'W'."
             },
             4: {
                 name: "State 4: Find Clear Path",
                 target: "clear path",
                 emoji: "🛣️",
-                prompt: "If there is no clear path ahead (obstacles blocking the way), return 'A'. If the clear path is on the left side of the frame, return 'A'. If the clear path is on the right side of the frame, return 'D'. If there is a clear path in the direct center of the frame, return 'W'."
+                prompt: "If there brown cardboard in front of the view, return 'A'. If there is little cardboard in the forward direction of the camera, return 'W'."
             }
         };
 
@@ -489,10 +493,36 @@
             }
         }
 
+        // Play audio notification for stage transitions
+        function playTransitionAudio(previousState, newState) {
+            try {
+                let audioFile;
+                
+                // Check if transitioning to stage 2 from a stage other than stage 1
+                if (newState === 2 && previousState == 1) {
+                    
+                    audioFile = 'ElevenLabs_2026-01-18T11_27_21_Cassidy - Crisp, Direct and Clear_pvc_sp100_s50_sb75_v3.mp3';
+                } else {
+                    // Default audio for all other transitions (including stage 1 to 2)
+                    audioFile = 'ElevenLabs_2026-01-18T11_28_53_Cassidy - Crisp, Direct and Clear_pvc_sp100_s50_sb75_v3.mp3';
+                }
+                
+                const audio = new Audio(audioFile);
+                audio.play().catch(error => {
+                    console.warn('Audio playback failed:', error);
+                });
+            } catch (error) {
+                console.warn('Failed to create audio:', error);
+            }
+        }
+
         // Transition to the next state
         function transitionToNextState() {
             // Stop any current movement
             sendArduinoCommand('X');
+
+            // Store previous state before incrementing
+            const previousState = currentState;
 
             // Move to next state
             currentState++;
@@ -505,6 +535,9 @@
                 stopStream();
                 return;
             }
+
+            // Play audio notification for transition
+            playTransitionAudio(previousState, currentState);
 
             // Start new state in rotating phase
             currentPhase = 'rotating';
@@ -559,6 +592,20 @@
         function handleVisionResult(result) {
             resultCount++;
             resultCountDiv.textContent = resultCount;
+
+            // Skip automatic commands if manual override is active
+            if (manualOverride) {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'result-item';
+                resultDiv.style.opacity = '0.5';
+                resultDiv.innerHTML = `
+                    <div class="result-number">[${resultCount}] State ${currentState} - MANUAL OVERRIDE</div>
+                    <div class="result-text">${result.result}</div>
+                    <div class="result-latency">Latency: ${result.total_latency_ms.toFixed(1)}ms | 🎮 Manual Control Active</div>
+                `;
+                results.insertBefore(resultDiv, results.firstChild);
+                return; // Skip automatic command processing
+            }
 
             // Parse the command from the result
             const command = parseMovementCommand(result.result);
@@ -800,6 +847,95 @@
         // Save API key to localStorage when changed
         apiKeyInput.addEventListener('change', () => {
             localStorage.setItem('overshoot_api_key', apiKeyInput.value);
+        });
+
+        // Keyboard controls for manual Arduino commands
+        document.addEventListener('keydown', (event) => {
+            // Track Shift key state
+            if (event.key === 'Shift') {
+                shiftPressed = true;
+                return;
+            }
+
+            // Only process if Arduino is connected
+            if (!arduinoConnected) {
+                return;
+            }
+
+            const key = event.key.toUpperCase();
+            
+            // Check if the key is a valid command (W, A, S, D, or X)
+            if (['W', 'A', 'S', 'D', 'X'].includes(key)) {
+                // If Shift is pressed, enable manual override
+                if (shiftPressed) {
+                    manualOverride = true;
+                    
+                    // Prevent default browser behavior
+                    event.preventDefault();
+                    
+                    // Send command to Arduino
+                    const success = sendArduinoCommand(key);
+                    
+                    if (success) {
+                        const directions = {
+                            'W': '🔼 FORWARD',
+                            'A': '◀️ LEFT',
+                            'S': '🔽 BACKWARD',
+                            'D': '▶️ RIGHT',
+                            'X': '⏹️ STOP'
+                        };
+                        
+                        console.log(`🎮 Manual override: ${key} (${directions[key]})`);
+                        
+                        // Visual feedback - show manual control is active
+                        const originalStatus = statusDiv.textContent;
+                        const originalClass = statusDiv.className;
+                        statusDiv.textContent = `🎮 MANUAL OVERRIDE: ${directions[key]}`;
+                        statusDiv.className = 'status active';
+                        statusDiv.style.background = '#fef3c7';
+                        statusDiv.style.color = '#92400e';
+                        
+                        // Restore status after 500ms
+                        setTimeout(() => {
+                            if (!manualOverride) {
+                                statusDiv.textContent = originalStatus;
+                                statusDiv.className = originalClass;
+                                statusDiv.style.background = '';
+                                statusDiv.style.color = '';
+                            }
+                        }, 500);
+                    }
+                }
+            }
+        });
+
+        // Handle key release to disable manual override
+        document.addEventListener('keyup', (event) => {
+            // If Shift is released, disable manual override
+            if (event.key === 'Shift') {
+                shiftPressed = false;
+                if (manualOverride) {
+                    manualOverride = false;
+                    console.log('🤖 Automatic control resumed');
+                    
+                    // Restore normal status display
+                    if (vision) {
+                        updateStatus('✅ Navigation active - Autonomous mode', 'active');
+                    }
+                }
+            }
+            
+            // If a movement key is released while Shift was used, keep override until Shift is released
+            const key = event.key.toUpperCase();
+            if (['W', 'A', 'S', 'D', 'X'].includes(key) && manualOverride && !shiftPressed) {
+                manualOverride = false;
+                console.log('🤖 Automatic control resumed');
+                
+                // Restore normal status display
+                if (vision) {
+                    updateStatus('✅ Navigation active - Autonomous mode', 'active');
+                }
+            }
         });
 
         // ==========================================
